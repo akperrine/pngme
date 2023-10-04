@@ -5,15 +5,13 @@ use std::fmt;
 use std::str::FromStr;
 
 pub struct Png {
-    header: [u8; 8],
     chunks: Vec<Chunk>
 }
 
 impl fmt::Display for Png {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Png {{",)?;
-        writeln!(f, " Header: {:?}", self.header)?;
-        writeln!(f, "Chunks {} bytes", self.chunks.len());
+        writeln!(f, "Chunks {} bytes", self.chunks.len())?;
         writeln!(f, "}}",)?;
         Ok(())
     }
@@ -37,31 +35,26 @@ impl TryFrom<&[u8]> for Png {
         let mut pointer = 0; 
 
         while pointer < chunks_bytes.len() {
-            // a bit unsafe
+
             let length_bytes = &chunks_bytes[pointer..pointer + 4];
-            println!("{:?}", length_bytes);
-            let length = u32::from_le_bytes(length_bytes.try_into().unwrap()) as usize;
+            println!("length bytes: {:?}", length_bytes);
+            let length = u32::from_be_bytes(length_bytes.try_into().unwrap()) as usize;
+            println!("{}",length);
 
-            // pointer += 4;
-
+            // + 12 bytes because length, chunk type, and Crc (4 bytes each) not inluded
             let chunk_bytes = &chunks_bytes[pointer.. pointer + length + 12];
-            println!("{:?}", chunk_bytes);
+            println!("chunk bytes: {:?}", chunk_bytes);
             let new_chunk: Chunk = Chunk::try_from(&chunk_bytes.to_vec()).unwrap();
             println!("{:?}", new_chunk);
 
             chunks.push(new_chunk);
 
-            pointer += length + 4;
+            pointer += length + 12;
 
-            // if new_chunk.crc() != 2882656334 {
-            //     return Err("CRC mismatch");
-            // }
-
-            pointer += 4;
         }
 
         println!("{}", pointer);
-        Ok(Png{header: Png::STANDARD_HEADER, chunks})
+        Ok(Png{chunks})
     }
 }
 
@@ -128,45 +121,45 @@ mod tests {
         assert!(png.is_ok());
     }
 
-    // #[test]
-    // fn test_invalid_header() {
-    //     let chunk_bytes: Vec<u8> = testing_chunks()
-    //         .into_iter()
-    //         .flat_map(|chunk| chunk.as_bytes())
-    //         .collect();
+    #[test]
+    fn test_invalid_header() {
+        let chunk_bytes: Vec<u8> = testing_chunks()
+            .into_iter()
+            .flat_map(|chunk| chunk.as_bytes())
+            .collect();
 
-    //     let bytes: Vec<u8> = [13, 80, 78, 71, 13, 10, 26, 10]
-    //         .iter()
-    //         .chain(chunk_bytes.iter())
-    //         .copied()
-    //         .collect();
+        let bytes: Vec<u8> = [13, 80, 78, 71, 13, 10, 26, 10]
+            .iter()
+            .chain(chunk_bytes.iter())
+            .copied()
+            .collect();
 
-    //     let png = Png::try_from(bytes.as_ref());
+        let png = Png::try_from(bytes.as_ref());
 
-    //     assert!(png.is_err());
-    // }
+        assert!(png.is_err());
+    }
 
-    // #[test]
-    // fn test_invalid_chunk() {
-    //     let mut chunk_bytes: Vec<u8> = testing_chunks()
-    //         .into_iter()
-    //         .flat_map(|chunk| chunk.as_bytes())
-    //         .collect();
+    #[test]
+    fn test_invalid_chunk() {
+        let mut chunk_bytes: Vec<u8> = testing_chunks()
+            .into_iter()
+            .flat_map(|chunk| chunk.as_bytes())
+            .collect();
 
-    //     #[rustfmt::skip]
-    //     let mut bad_chunk = vec![
-    //         0, 0, 0, 5,         // length
-    //         32, 117, 83, 116,   // Chunk Type (bad)
-    //         65, 64, 65, 66, 67, // Data
-    //         1, 2, 3, 4, 5       // CRC (bad)
-    //     ];
+        #[rustfmt::skip]
+        let mut bad_chunk = vec![
+            0, 0, 0, 5,         // length
+            32, 117, 83, 116,   // Chunk Type (bad)
+            65, 64, 65, 66, 67, // Data
+            1, 2, 3, 4, 5       // CRC (bad)
+        ];
 
-    //     chunk_bytes.append(&mut bad_chunk);
+        chunk_bytes.append(&mut bad_chunk);
 
-    //     let png = Png::try_from(chunk_bytes.as_ref());
+        let png = Png::try_from(chunk_bytes.as_ref());
 
-    //     assert!(png.is_err());
-    // }
+        assert!(png.is_err());
+    }
 
 
     // #[test]
