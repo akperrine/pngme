@@ -32,7 +32,7 @@ impl TryFrom<&Vec<u8>> for Chunk{
         }
 
         let length_bytes: [u8; 4] = [bytes[0], bytes[1], bytes[2], bytes[3]];
-        let length = u32::from_le_bytes(length_bytes);
+        let length = u32::from_be_bytes(length_bytes);
         println!("length: {}", length);
         let chunk_type_bytes: [u8; 4] = [bytes[4], bytes[5], bytes[6], bytes[7]];
         let chunk_type = ChunkType::try_from(chunk_type_bytes).unwrap();
@@ -80,8 +80,9 @@ impl Chunk {
     }
 
     pub fn length(&self) -> u32 {
-        let data = &self.chunk_data;
-        data.len().try_into().unwrap()
+        // let data = &self.chunk_data;
+        // data.len().try_into().unwrap()
+        self.length
     }
 
     pub fn chunk_type(&self) -> &ChunkType {
@@ -106,10 +107,10 @@ impl Chunk {
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        bytes.extend_from_slice(&self.length.to_le_bytes());
+        bytes.extend_from_slice(&self.length.to_be_bytes());
         bytes.extend_from_slice(&self.chunk_type.bytes());
         bytes.extend_from_slice(&self.chunk_data);
-        bytes.extend_from_slice(&self.crc.to_le_bytes());
+        bytes.extend_from_slice(&self.crc.to_be_bytes());
 
         bytes
     }
