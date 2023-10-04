@@ -6,7 +6,7 @@ use crc::{Crc, CRC_32_ISO_HDLC};
 #[derive(Debug)]
 pub struct Chunk {
     length: u32,
-    chunk_type: ChunkType,
+    pub chunk_type: ChunkType,
     chunk_data: Vec<u8>,
     crc: u32
 }
@@ -80,8 +80,6 @@ impl Chunk {
     }
 
     pub fn length(&self) -> u32 {
-        // let data = &self.chunk_data;
-        // data.len().try_into().unwrap()
         self.length
     }
 
