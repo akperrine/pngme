@@ -1,8 +1,10 @@
 use crate::{chunk_type::ChunkType, Error};
+use std::str::FromStr;
 use std::fmt;
 use crc::{Crc, CRC_32_ISO_HDLC};
 
-struct Chunk {
+#[derive(Debug)]
+pub struct Chunk {
     length: u32,
     chunk_type: ChunkType,
     chunk_data: Vec<u8>,
@@ -30,12 +32,14 @@ impl TryFrom<&Vec<u8>> for Chunk{
         }
 
         let length_bytes: [u8; 4] = [bytes[0], bytes[1], bytes[2], bytes[3]];
-        let length = u32::from_be_bytes(length_bytes);
-
+        let length = u32::from_le_bytes(length_bytes);
+        println!("length: {}", length);
         let chunk_type_bytes: [u8; 4] = [bytes[4], bytes[5], bytes[6], bytes[7]];
         let chunk_type = ChunkType::try_from(chunk_type_bytes).unwrap();
+        println!("chunk type: {}", chunk_type);
 
         let chunk_data = bytes[8..bytes.len() - 4].to_vec();
+        println!("chunk data arr: {:?}", chunk_data);
 
         let crc_bytes: [u8; 4] = [
             bytes[bytes.len() - 4],
@@ -43,8 +47,11 @@ impl TryFrom<&Vec<u8>> for Chunk{
             bytes[bytes.len() - 2],
             bytes[bytes.len() - 1],
         ];
+        println!("crc arr: {:?}", crc_bytes);
         let crc = u32::from_be_bytes(crc_bytes);
-
+        println!("crc {}", crc);
+        println!("expected crc {}", Chunk::calc_crc(&chunk_type, &chunk_data));
+        let check = Crc::checksum(&self, bytes);
         if Chunk::calc_crc(&chunk_type, &chunk_data) != crc {
             return Err("Data is corrupted")
         }
@@ -114,6 +121,13 @@ impl Chunk {
         digest.finalize()
     }
 
+}
+
+pub fn chunk_from_strings(chunk_type_input: &str, message: &str) -> Result<Chunk, Error> {
+    let chunk_type = ChunkType::from_str(chunk_type_input).unwrap();
+     let chunk = Chunk::new(chunk_type, message.as_bytes().to_vec());
+
+     Ok(chunk)
 }
 
 
