@@ -22,14 +22,12 @@ impl TryFrom<&[u8]> for Png {
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         let header_bytes = bytes[0..8].to_vec();
-        println!("{:?}",bytes);
         
         if header_bytes != Png::STANDARD_HEADER {
             return Err("Header does not match PNG format")
         }
         
         let chunks_bytes = bytes[8..].to_vec();
-        println!("{:?}", chunks_bytes);
         let mut chunks: Vec<Chunk> = Vec::new();
 
         let mut pointer = 0; 
@@ -37,23 +35,20 @@ impl TryFrom<&[u8]> for Png {
         while pointer < chunks_bytes.len() {
 
             let length_bytes = &chunks_bytes[pointer..pointer + 4];
-            println!("length bytes: {:?}", length_bytes);
             let length = u32::from_be_bytes(length_bytes.try_into().unwrap()) as usize;
-            println!("{}",length);
+            // println!("{}",length);
 
             // + 12 bytes because length, chunk type, and Crc (4 bytes each) not inluded
             let chunk_bytes = &chunks_bytes[pointer.. pointer + length + 12];
-            println!("chunk bytes: {:?}", chunk_bytes);
             let new_chunk: Chunk = Chunk::try_from(&chunk_bytes.to_vec()).unwrap();
-            println!("{:?}", new_chunk);
 
             chunks.push(new_chunk);
 
             pointer += length + 12;
 
         }
-
-        println!("{}", pointer);
+        // println!("chunks {:?}", chunks);
+        // println!("{}", pointer);
         Ok(Png{chunks})
     }
 }

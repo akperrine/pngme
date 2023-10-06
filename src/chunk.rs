@@ -39,7 +39,7 @@ impl TryFrom<&Vec<u8>> for Chunk{
         println!("chunk type: {}", chunk_type);
 
         let chunk_data = bytes[8..bytes.len() - 4].to_vec();
-        println!("chunk data arr: {:?}", chunk_data);
+        // println!("chunk data arr: {:?}", chunk_data);
 
         let crc_bytes: [u8; 4] = [
             bytes[bytes.len() - 4],
